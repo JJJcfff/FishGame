@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -17,11 +18,19 @@ public class DynamicRateLimiter implements Filter {
     private static final long MAX_REQUESTS_NORMAL = 5; // 正常流量下的请求限制
     private static final long MAX_REQUESTS_HIGH_LOAD = 5; // 高负载下的请求限制
 
+    @Value("${security.ratelimit.enabled:true}")
+    private boolean rateLimitEnabled;
+
     private HashMap<String, Long> userRequestCount = new HashMap<>();
 
     @Override
     public void doFilter(jakarta.servlet.ServletRequest request, jakarta.servlet.ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
+        if (!rateLimitEnabled) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         double systemLoad = ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage();
 
